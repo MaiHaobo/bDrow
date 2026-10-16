@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build iOS App
+    name: Build Unsigned IPA
     runs-on: macos-latest
 
     steps:
@@ -19,14 +19,32 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build
+      - name: Build archive (unsigned)
         run: |
           xcodebuild \
             -project bDrow.xcodeproj \
             -scheme bDrow \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/bDrow.xcarchive" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          mkdir -p Payload
+          cp -R "bDrow.xcarchive/Products/Applications/bDrow.app" Payload/
+          zip -qr bDrow-unsigned.ipa Payload
+          ls -lh bDrow-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bDrow-unsigned-ipa
+          path: ${{ runner.temp }}/bDrow-unsigned.ipa
+          retention-days: 30
