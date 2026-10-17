@@ -13,15 +13,24 @@ struct DrawingScreen: View {
 
     var body: some View {
         GeometryReader { geo in
-            CanvasView()
-                .background(Color.white)
-                .onAppear {
-                    // 记录画布实际像素尺寸（按 2x 渲染，便于导出清晰图片）
-                    store.canvasSize = CGSize(
-                        width: max(1, geo.size.width * 2),
-                        height: max(1, geo.size.height * 2)
-                    )
+            ZStack {
+                Color.white
+                // 从相册导入的底图
+                if let bg = store.importedBackground {
+                    Image(uiImage: bg)
+                        .resizable()
+                        .scaledToFill()
+                        .opacity(0.9)
+                        .allowsHitTesting(false)
                 }
+                CanvasView()
+            }
+            .onAppear {
+                store.canvasSize = CGSize(
+                    width: max(1, geo.size.width * 2),
+                    height: max(1, geo.size.height * 2)
+                )
+            }
         }
         .background(Color.white)
         .navigationTitle("bDrow")
@@ -38,17 +47,35 @@ struct DrawingScreen: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 14) {
+                    // 保存到画廊
                     Button {
-                        store.saveToPhotoLibrary()
+                        store.saveArtwork(imported: store.importedBackground != nil)
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
-                    .disabled(store.strokes.isEmpty)
+                    .disabled(store.strokes.isEmpty && store.importedBackground == nil)
 
+                    // 调色
                     Button {
                         showPalette.toggle()
                     } label: {
                         Image(systemName: "paintpalette")
+                    }
+
+                    // 更多
+                    Menu {
+                        Button {
+                            store.saveToPhotoLibrary()
+                        } label: {
+                            Label("另存到系统相册", systemImage: "photo")
+                        }
+                        Button(role: .destructive) {
+                            store.clear()
+                        } label: {
+                            Label("清空画布", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
@@ -58,7 +85,7 @@ struct DrawingScreen: View {
         }
         .sheet(isPresented: $showPalette) {
             PaletteSheet()
-                .presentationDetents([.height(220)])
+                .presentationDetents([.height(240)])
                 .presentationDragIndicator(.visible)
         }
         .overlay(alignment: .top) {
