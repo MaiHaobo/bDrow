@@ -2,7 +2,8 @@
 //  ToolbarView.swift
 //  bDrow
 //
-//  底部工具栏：工具切换、调色板、粗细、撤销、清空
+//  底部浮动工具栏：工具切换、粗细、撤销、清空
+//  低系统用毛玻璃，iOS 26+ 用液态玻璃
 //
 
 import SwiftUI
@@ -11,78 +12,81 @@ struct ToolbarView: View {
     @EnvironmentObject var store: DrawingStore
 
     var body: some View {
-        VStack(spacing: 12) {
-            // 颜色调色板
-            HStack(spacing: 12) {
-                ForEach(store.palette.indices, id: \.self) { index in
-                    let color = store.palette[index]
-                    Circle()
-                        .fill(color)
-                        .frame(width: 26, height: 26)
-                        .overlay(
-                            Circle().stroke(
-                                store.color == color ? Color.accentColor : Color.gray.opacity(0.35),
-                                lineWidth: store.color == color ? 3 : 1
-                            )
-                        )
-                        .onTapGesture {
-                            store.color = color
-                            store.tool = .pen
-                        }
-                }
-            }
-            .padding(.top, 10)
-
-            HStack(spacing: 20) {
-                // 工具切换
-                ForEach(DrawingTool.allCases) { tool in
-                    Button {
-                        store.tool = tool
-                    } label: {
-                        Image(systemName: tool.systemImage)
-                            .font(.system(size: 20))
-                            .foregroundStyle(store.tool == tool ? Color.accentColor : .primary)
-                    }
-                }
-
-                Divider().frame(height: 24)
-
-                // 粗细滑块
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 8))
-                Slider(value: $store.lineWidth, in: 1...30)
-                    .frame(maxWidth: 140)
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 16))
-
-                Divider().frame(height: 24)
-
-                // 撤销
+        HStack(spacing: 6) {
+            // 工具切换
+            ForEach(DrawingTool.allCases) { tool in
                 Button {
-                    store.undo()
+                    store.tool = tool
                 } label: {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 20))
+                    Image(systemName: tool.systemImage)
+                        .font(.system(size: 19, weight: .medium))
+                        .frame(width: 42, height: 42)
+                        .foregroundStyle(store.tool == tool ? Color.accentColor : Color.primary)
                 }
-                .disabled(store.strokes.isEmpty)
-
-                // 清空
-                Button(role: .destructive) {
-                    store.clear()
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 20))
-                }
-                .disabled(store.strokes.isEmpty)
             }
-            .padding(.bottom, 10)
+
+            Divider().frame(height: 22)
+
+            // 粗细图标（小）
+            Image(systemName: "circle.fill")
+                .font(.system(size: 7))
+                .foregroundStyle(.secondary)
+
+            Slider(value: $store.lineWidth, in: 1...30)
+                .frame(maxWidth: 110)
+                .tint(store.color)
+
+            // 粗细图标（大）
+            Image(systemName: "circle.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+
+            // 清除
+            Button(role: .destructive) {
+                store.clear()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 19, weight: .medium))
+                    .frame(width: 42, height: 42)
+            }
+            .disabled(store.strokes.isEmpty)
         }
-        .padding(.horizontal)
-        .background(.bar)
+        .padding(.horizontal, 10)
+        .frame(height: 58)
+        .adaptiveGlassPill()          // ← 关键：自适应玻璃
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
+    }
+}
+
+// MARK: - 自适应玻璃外观
+
+extension View {
+    /// iOS 26+ 使用 Liquid Glass；低版本回退为系统毛玻璃材质
+    @ViewBuilder
+    func adaptiveGlassPill() -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: .capsule)
+        } else {
+            self
+                .background(.ultraThinMaterial, in: .capsule)
+                .overlay(
+                    Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                )
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        }
     }
 }
 
 #Preview {
-    ToolbarView()
-        .environmentObject(DrawingStore())
+    ZStack {
+        Color.white
+        VStack {
+            Spacer()
+            ToolbarView()
+                .environmentObject(DrawingStore())
+        }
+    }
 }
