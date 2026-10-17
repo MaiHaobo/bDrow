@@ -1,0 +1,61 @@
+name: Apply Icon
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - icon.b64
+  workflow_dispatch:
+
+jobs:
+  apply-icon:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode base64 to icon
+        run: |
+          tr -d '\n\r ' < icon.b64 | base64 -d > icon.png
+          file icon.png
+          sips -g pixelWidth -g pixelHeight icon.png
+
+      - name: Verify size is 1024x1024
+        run: |
+          W=$(sips -g pixelWidth icon.png | awk '/pixelWidth/{print $2}')
+          H=$(sips -g pixelHeight icon.png | awk '/pixelHeight/{print $2}')
+          echo "尺寸: ${W}x${H}"
+          if [ "$W" != "1024" ] || [ "$H" != "1024" ]; then
+            echo "::error::图标不是 1024x1024，请重新用快捷指令裁剪成正方形"
+            exit 1
+          fi
+
+      - name: Install into asset catalog
+        run: |
+          cp icon.png bDrow/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+          cat > bDrow/Assets.xcassets/AppIcon.appiconset/Contents.json << 'EOF'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+
+      - name: Commit icon
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bDrow/Assets.xcassets/AppIcon.appiconset/ icon.png
+          git commit -m "添加应用图标（由 icon.b64 解码）" || echo "无变更"
+          git push
