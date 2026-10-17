@@ -6,7 +6,7 @@ struct SketchPadApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DrawingScreen()
+            GalleryScreen()
                 .environmentObject(store)
         }
     }
