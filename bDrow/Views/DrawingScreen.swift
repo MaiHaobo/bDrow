@@ -11,22 +11,30 @@ struct DrawingScreen: View {
     @EnvironmentObject var store: DrawingStore
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 画布区域
+        NavigationStack {
             CanvasView()
                 .background(Color.white)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            Divider()
-
-            // 工具栏
-            ToolbarView()
+                .navigationTitle("bDrow")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { store.undo() } label: {
+                            Image(systemName: "arrow.uturn.backward")
+                        }
+                        .disabled(store.strokes.isEmpty)
+                        .adaptiveGlassButton()          // 见 ④
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { store.clear() } label: {
+                            Image(systemName: "trash")
+                        }
+                        .disabled(store.strokes.isEmpty)
+                        .adaptiveGlassButton()
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    ToolbarView()
+                }
         }
-        .ignoresSafeArea(edges: .bottom)
     }
-}
-
-#Preview {
-    DrawingScreen()
-        .environmentObject(DrawingStore())
 }
