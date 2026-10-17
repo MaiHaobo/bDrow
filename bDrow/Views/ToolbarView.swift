@@ -2,8 +2,8 @@
 //  ToolbarView.swift
 //  bDrow
 //
-//  底部浮动工具栏：工具切换、粗细、撤销、清空
-//  低系统用毛玻璃，iOS 26+ 用液态玻璃
+//  底部浮动工具栏：工具切换、粗细、清空
+//  低系统用毛玻璃；iOS 26+ 由系统容器自动呈现液态玻璃
 //
 
 import SwiftUI
@@ -27,7 +27,7 @@ struct ToolbarView: View {
 
             Divider().frame(height: 22)
 
-            // 粗细图标（小）
+            // 粗细：小点
             Image(systemName: "circle.fill")
                 .font(.system(size: 7))
                 .foregroundStyle(.secondary)
@@ -36,14 +36,14 @@ struct ToolbarView: View {
                 .frame(maxWidth: 110)
                 .tint(store.color)
 
-            // 粗细图标（大）
+            // 粗细：大点
             Image(systemName: "circle.fill")
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
 
             Spacer(minLength: 0)
 
-            // 清除
+            // 清空
             Button(role: .destructive) {
                 store.clear()
             } label: {
@@ -55,7 +55,7 @@ struct ToolbarView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 58)
-        .adaptiveGlassPill()          // ← 关键：自适应玻璃
+        .adaptiveGlassPill()
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
     }
@@ -64,19 +64,16 @@ struct ToolbarView: View {
 // MARK: - 自适应玻璃外观
 
 extension View {
-    /// iOS 26+ 使用 Liquid Glass；低版本回退为系统毛玻璃材质
-    @ViewBuilder
+    /// 毛玻璃胶囊底座。
+    /// 说明：不使用 iOS 26 专属的 .glassEffect，以兼容任意 Xcode SDK；
+    /// 在 iOS 26 上，NavigationStack / toolbar / safeAreaInset 会由系统自动呈现液态玻璃。
     func adaptiveGlassPill() -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(.regular, in: .capsule)
-        } else {
-            self
-                .background(.ultraThinMaterial, in: .capsule)
-                .overlay(
-                    Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-        }
+        self
+            .background(.ultraThinMaterial, in: .capsule)
+            .overlay(
+                Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
     }
 }
 
